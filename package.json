@@ -80,12 +80,12 @@
     "download count",
     "可视化"
   ],
-  "homepage": "https://github.com/luffyli/vue-step",
+  "homepage": "https://github.com/luffyli/npm-packages-download-count",
   "bugs": {
-    "url": "https://github.com/luffyli/vue-step/issues"
+    "url": "https://github.com/luffyli/npm-packages-download-count/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/luffyli/vue-step.git"
+    "url": "git+https://github.com/luffyli/npm-packages-download-count.git"
   }
 }
