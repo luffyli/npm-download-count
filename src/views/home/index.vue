@@ -13,7 +13,7 @@
             </el-date-picker>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="onSubmit('queryForm')">查询</el-button>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
           </el-form-item>
         </el-form>
         <div id="chart-render"></div>
@@ -139,24 +139,25 @@ export default {
         smooth: true
       }]
     }
+    window.onresize = this.npmDataChart.resize
   },
   methods: {
-    async getData () {
-      let that = this
-      that.npmDataChart.showLoading()
-      await fetch(`https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.queryForm.packageName}`, {timeout: 5000})
-        .then(function (response) {
-          if (response.status >= 400) {
-            that.npmDataChart.hideLoading()
-            that.$notify.error({
+    getData () {
+      let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.queryForm.packageName}`
+      this.npmDataChart.showLoading()
+      fetch(url, {timeout: 5000})
+        .then((response) => {
+          if (response.status === 404) {
+            this.npmDataChart.hideLoading()
+            this.$notify.error({
               title: '错误',
               message: '数据获取失败！请检查包名是否正确！'
             })
-            throw new Error('数据获取失败！')
+            throw new Error('404')
           }
           return response.json()
         })
-        .then(function (res) {
+        .then((res) => {
           let resData = res.downloads
           let dayArr = []
           let downloadsArr = []
@@ -166,23 +167,26 @@ export default {
             downloadsArr.push(resData[i].downloads)
             downloadCount += resData[i].downloads
           }
-          that.chartOpention.title.text = `范围内总下载数：${downloadCount}`
-          that.chartOpention.xAxis.data = dayArr
-          that.chartOpention.series[0].data = downloadsArr
-          that.npmDataChart.hideLoading()
-          that.npmDataChart.setOption(that.chartOpention)
+          downloadCount = downloadCount.toLocaleString()
+          this.chartOpention.title.text = `范围内总下载数：${downloadCount}`
+          this.chartOpention.xAxis.data = dayArr
+          this.chartOpention.series[0].data = downloadsArr
+          this.npmDataChart.hideLoading()
+          this.npmDataChart.setOption(this.chartOpention)
         })
-        .catch(function (e) {
-          that.$notify.error({
-            title: '错误',
-            message: '网络错误！'
-          })
-          that.npmDataChart.hideLoading()
+        .catch((e) => {
+          if (e.message !== '404') {
+            this.$notify.error({
+              title: '错误',
+              message: '网络错误！'
+            })
+            this.npmDataChart.hideLoading()
+          }
           return Promise.reject(e)
         })
     },
-    onSubmit (formName) {
-      this.$refs[formName].validate((valid) => {
+    onSubmit () {
+      this.$refs['queryForm'].validate((valid) => {
         if (valid) {
           this.getData()
         } else {
