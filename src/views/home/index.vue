@@ -28,6 +28,21 @@ import fetch from 'isomorphic-fetch'
 
 export default {
   data () {
+    let checkDateLength = (rule, value, callback) => {
+      let timeLen = new Date(value[1]).getTime() - new Date(value[0]).getTime()
+      let dataLen = timeLen / 86400000
+      console.log(dataLen)
+      if (dataLen > 546) { // 超过546天
+        this.$notify({
+          title: '提示',
+          message: '日期范围超出546天跨度，超出部分的数据不显示！',
+          type: 'warning'
+        })
+        callback()
+      } else {
+        callback()
+      }
+    }
     return {
       queryForm: {
         packageName: '',
@@ -67,13 +82,14 @@ export default {
           { required: true, message: '请输入包名', trigger: 'blur' }
         ],
         datetime: [
-          { required: true, message: '请选择日期范围', trigger: 'change' }
+          { required: true, message: '请选择日期范围', trigger: 'change' },
+          { validator: checkDateLength, trigger: 'change' }
         ]
       }
     }
   },
   mounted () {
-    this.npmDataChart = echarts.init(document.getElementById('chart-render'))
+    this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
     this.chartOpention = {
       title: {
         left: 'center',
@@ -149,9 +165,10 @@ export default {
         .then((response) => {
           if (response.status === 404) {
             this.npmDataChart.hideLoading()
-            this.$notify.error({
+            this.$notify({
               title: '错误',
-              message: '数据获取失败！请检查包名是否正确！'
+              message: '数据获取失败！请检查包名是否正确！',
+              type: 'error'
             })
             throw new Error('404')
           }
@@ -176,9 +193,10 @@ export default {
         })
         .catch((e) => {
           if (e.message !== '404') {
-            this.$notify.error({
+            this.$notify({
               title: '错误',
-              message: '网络错误！'
+              message: '网络错误！',
+              type: 'error'
             })
             this.npmDataChart.hideLoading()
           }
