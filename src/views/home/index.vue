@@ -4,7 +4,7 @@
       <el-header>npm包下载统计</el-header>
       <el-main>
         <el-form :inline="true" :model="queryForm" :rules="rules" ref="queryForm" class="query-form-inline">
-          <el-form-item label="npm包名" prop="packageName">
+          <el-form-item label="npm包名（多个包名使用,分割）" prop="packageName">
             <el-input v-model="queryForm.packageName" placeholder="请输入包名"></el-input>
           </el-form-item>
           <el-form-item label="日期范围" prop="datetime">
@@ -23,7 +23,12 @@
 </template>
 
 <script>
-import echarts from 'echarts'
+import * as echarts from 'echarts/lib/echarts'
+import 'echarts/lib/chart/line'
+import 'echarts/lib/component/tooltip'
+import 'echarts/lib/component/title'
+import 'echarts/lib/component/legend'
+import 'echarts/lib/component/dataZoom'
 import fetch from 'isomorphic-fetch'
 
 export default {
@@ -31,7 +36,6 @@ export default {
     let checkDateLength = (rule, value, callback) => {
       let timeLen = new Date(value[1]).getTime() - new Date(value[0]).getTime()
       let dataLen = timeLen / 86400000
-      console.log(dataLen)
       if (dataLen > 546) { // 超过546天
         this.$notify({
           title: '提示',
@@ -90,71 +94,7 @@ export default {
   },
   mounted () {
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
-    this.chartOpention = {
-      title: {
-        left: 'center',
-        text: ''
-      },
-      legend: {
-        data: []
-      },
-      tooltip: {
-        trigger: 'axis'
-      },
-      dataZoom: [{
-        type: 'inside'
-      }, {
-        handleSize: '80%',
-        handleStyle: {
-          color: '#fff',
-          shadowBlur: 3,
-          shadowColor: 'rgba(0, 0, 0, 0.6)',
-          shadowOffsetX: 2,
-          shadowOffsetY: 2
-        }
-      }],
-      grid: {
-        left: '3%',
-        right: '3%',
-        bottom: '3%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'category',
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#609ee9'
-          }
-        },
-        data: []
-      },
-      yAxis: {
-        type: 'value',
-        splitLine: {
-          lineStyle: {
-            color: ['#D4DFF5']
-          }
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#609ee9'
-          }
-        }
-      },
-      series: [{
-        data: [],
-        type: 'line',
-        itemStyle: {
-          normal: {
-            color: '#58c8da'
-          }
-        },
-        smooth: true
-      }]
-    }
+    this.initChartData()
     window.onresize = this.npmDataChart.resize
   },
   methods: {
@@ -171,37 +111,69 @@ export default {
               type: 'error'
             })
             throw new Error('404')
+          } else if (response.status === 400) {
+            this.$notify({
+              title: '错误',
+              message: '批量查询超过了365天！',
+              type: 'error'
+            })
+            throw new Error('400')
           }
           return response.json()
         })
         .then((res) => {
-          let resData = res.downloads
-          let dayArr = []
-          let downloadsArr = []
-          let downloadCount = 0
-          for (let i = 0, len = resData.length; i < len; i++) {
-            dayArr.push(resData[i].day)
-            downloadsArr.push(resData[i].downloads)
-            downloadCount += resData[i].downloads
+          this.initChartData()
+          let packageArr = this.queryForm.packageName.split(',')
+          if (packageArr.length > 1) {
+            for (let value of Object.entries(res)) {
+              if (value[0]) {
+                this.dataHandle(value[0], value[1].downloads, true)
+              }
+            }
+          } else {
+            this.dataHandle(this.queryForm.packageName, res.downloads, false)
           }
-          downloadCount = downloadCount.toLocaleString()
-          this.chartOpention.title.text = `范围内总下载数：${downloadCount}`
-          this.chartOpention.xAxis.data = dayArr
-          this.chartOpention.series[0].data = downloadsArr
           this.npmDataChart.hideLoading()
           this.npmDataChart.setOption(this.chartOpention)
         })
         .catch((e) => {
-          if (e.message !== '404') {
+          if (e.message !== '404' && e.message !== '400') {
             this.$notify({
               title: '错误',
               message: '网络错误！',
               type: 'error'
             })
-            this.npmDataChart.hideLoading()
           }
+          this.npmDataChart.hideLoading()
           return Promise.reject(e)
         })
+    },
+    dataHandle (seriesName, dataArr, isBatch) {
+      let downloadsArr = []
+      let dayArr = []
+      let totalDownload = 0
+      for (let dwValue of Array.values(dataArr)) {
+        dayArr.push(dwValue.day)
+        downloadsArr.push(dwValue.downloads)
+        totalDownload += dwValue.downloads
+      }
+      console.log(totalDownload)
+      this.chartOpention.series.push({
+        name: seriesName,
+        type: 'line',
+        stack: '下载数',
+        data: downloadsArr,
+        smooth: true
+      })
+      this.chartOpention.xAxis.data = dayArr
+      if (isBatch) {
+        this.chartOpention.legend.data.push(seriesName)
+        totalDownload = totalDownload.toLocaleString()
+        this.chartOpention.title.text += ` ${seriesName}： ${totalDownload} / `
+      } else {
+        totalDownload = totalDownload.toLocaleString()
+        this.chartOpention.title.text = ` ${seriesName}： ${totalDownload} `
+      }
     },
     onSubmit () {
       this.$refs['queryForm'].validate((valid) => {
@@ -212,6 +184,69 @@ export default {
           return false
         }
       })
+    },
+    initChartData () {
+      this.chartOpention = {
+        title: {
+          left: '3%',
+          text: '',
+          textStyle: {
+            fontSize: 14,
+            fontWeight: 500
+          }
+        },
+        legend: {
+          data: [],
+          right: '3%'
+        },
+        tooltip: {
+          trigger: 'axis'
+        },
+        dataZoom: [{
+          type: 'inside'
+        }, {
+          handleSize: '80%',
+          handleStyle: {
+            color: '#fff',
+            shadowBlur: 3,
+            shadowColor: 'rgba(0, 0, 0, 0.6)',
+            shadowOffsetX: 2,
+            shadowOffsetY: 2
+          }
+        }],
+        grid: {
+          left: '3%',
+          right: '3%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          axisTick: {
+            show: false
+          },
+          axisLine: {
+            lineStyle: {
+              color: '#609ee9'
+            }
+          },
+          data: []
+        },
+        yAxis: {
+          type: 'value',
+          splitLine: {
+            lineStyle: {
+              color: ['#D4DFF5']
+            }
+          },
+          axisLine: {
+            lineStyle: {
+              color: '#609ee9'
+            }
+          }
+        },
+        series: []
+      }
     }
   }
 }
