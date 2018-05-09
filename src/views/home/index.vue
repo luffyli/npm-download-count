@@ -4,8 +4,13 @@
       <el-header>npm包下载统计</el-header>
       <el-main>
         <el-form :inline="true" :model="queryForm" :rules="rules" ref="queryForm" class="query-form-inline">
-          <el-form-item label="npm包名（多个包名使用,分割）" prop="packageName">
-            <el-input v-model="queryForm.packageName" placeholder="请输入包名"></el-input>
+          <el-form-item prop="name">
+            <el-input placeholder="请输入" v-model="queryForm.name" class="input-with-select">
+              <el-select v-model="searchType" slot="prepend" placeholder="请选择">
+                <el-option label="包名" value="1"></el-option>
+                <el-option label="用户名" value="2"></el-option>
+              </el-select>
+            </el-input>
           </el-form-item>
           <el-form-item label="日期范围" prop="datetime">
             <el-date-picker v-model="queryForm.datetime" type="daterange" align="right" value-format="yyyy-MM-dd" unlink-panels range-separator="至" start-placeholder="开始日期"
@@ -13,10 +18,18 @@
             </el-date-picker>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="onSubmit">查询</el-button>
+            <el-button type="primary" @click="onSubmit" v-loading.fullscreen.lock="fullscreenLoading">查询</el-button>
           </el-form-item>
         </el-form>
-        <div id="chart-render"></div>
+        <el-card class="box-card" v-show="packageInfo.length > 0">
+          <div slot="header" class="clearfix">
+            <div class="total-download-tag">
+              <span>范围内下载总数：</span>
+              <el-tag v-for="(item, index) in packageInfo" :key="index"><a class="link_to_npm" :href="`https://www.npmjs.com/package/${item.name}`" target="_blank">{{ item.name }}</a>：{{ item.total }}</el-tag>
+            </div>
+          </div>
+          <div id="chart-render"></div>
+        </el-card>
       </el-main>
     </el-container>
   </div>
@@ -48,8 +61,12 @@ export default {
       }
     }
     return {
+      fullscreenLoading: false,
+      packageInfo: [],
+      packageName: 'vue',
+      searchType: '1',
       queryForm: {
-        packageName: '',
+        name: '',
         datetime: ''
       },
       npmDataChart: '',
@@ -82,8 +99,8 @@ export default {
         }]
       },
       rules: {
-        packageName: [
-          { required: true, message: '请输入包名', trigger: 'blur' }
+        name: [
+          { required: true, message: '请输入', trigger: 'blur' }
         ],
         datetime: [
           { required: true, message: '请选择日期范围', trigger: 'change' },
@@ -94,20 +111,20 @@ export default {
   },
   mounted () {
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
-    this.initChartData()
+    this.initChartOption()
     window.onresize = this.npmDataChart.resize
   },
   methods: {
-    getData () {
-      let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.queryForm.packageName}`
-      this.npmDataChart.showLoading()
+    getPackageData () {
+      let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.packageName}`
+      this.fullscreenLoading = true
       fetch(url, {timeout: 5000})
         .then((response) => {
           if (response.status === 404) {
-            this.npmDataChart.hideLoading()
+            this.fullscreenLoading = false
             this.$notify({
               title: '错误',
-              message: '数据获取失败！请检查包名是否正确！',
+              message: '数据获取失败！请检查名称是否正确！',
               type: 'error'
             })
             throw new Error('404')
@@ -122,8 +139,9 @@ export default {
           return response.json()
         })
         .then((res) => {
-          this.initChartData()
-          let packageArr = this.queryForm.packageName.split(',')
+          this.initChartOption()
+          this.packageInfo = []
+          let packageArr = this.packageName.split(',')
           if (packageArr.length > 1) {
             for (let value of Object.entries(res)) {
               if (value[0]) {
@@ -131,10 +149,13 @@ export default {
               }
             }
           } else {
-            this.dataHandle(this.queryForm.packageName, res.downloads, false)
+            this.dataHandle(this.packageName, res.downloads, false)
           }
-          this.npmDataChart.hideLoading()
-          this.npmDataChart.setOption(this.chartOpention)
+          this.fullscreenLoading = false
+          this.npmDataChart.setOption(this.chartOpention, true)
+          setTimeout(() => {
+            this.npmDataChart.resize()
+          }, 0)
         })
         .catch((e) => {
           if (e.message !== '404' && e.message !== '400') {
@@ -144,8 +165,38 @@ export default {
               type: 'error'
             })
           }
-          this.npmDataChart.hideLoading()
+          this.fullscreenLoading = false
           return Promise.reject(e)
+        })
+    },
+    getUserData () {
+      let offset = 0
+      let size = 20
+      let url = `https://api.npms.io/v2/search?q=maintainer:${this.queryForm.name}&size=${size}&from=${offset}`
+      var packageArr = []
+      fetch(url, {timeout: 10000})
+        .then((response) => {
+          return response.json()
+        })
+        .then((res) => {
+          if (res.total === 0) {
+            this.$notify({
+              title: '提示',
+              message: '此用户不存在或此用户下没有包！',
+              type: 'warning'
+            })
+            return
+          }
+          packageArr = packageArr.concat(res.results.map(x => x.package))
+          let packageName = []
+          packageArr.forEach((item) => {
+            packageName.push(item.name)
+          })
+          this.packageName = packageName.toString()
+          this.getPackageData()
+        })
+        .catch((e) => {
+          console.log(e)
         })
     },
     dataHandle (seriesName, dataArr, isBatch) {
@@ -157,11 +208,9 @@ export default {
         downloadsArr.push(dwValue.downloads)
         totalDownload += dwValue.downloads
       }
-      console.log(totalDownload)
       this.chartOpention.series.push({
         name: seriesName,
         type: 'line',
-        stack: '下载数',
         data: downloadsArr,
         smooth: true
       })
@@ -169,23 +218,33 @@ export default {
       if (isBatch) {
         this.chartOpention.legend.data.push(seriesName)
         totalDownload = totalDownload.toLocaleString()
-        this.chartOpention.title.text += ` ${seriesName}： ${totalDownload} / `
+        this.packageInfo.push({
+          name: seriesName,
+          total: totalDownload
+        })
       } else {
         totalDownload = totalDownload.toLocaleString()
-        this.chartOpention.title.text = ` ${seriesName}： ${totalDownload} `
+        this.packageInfo.push({
+          name: seriesName,
+          total: totalDownload
+        })
       }
     },
     onSubmit () {
       this.$refs['queryForm'].validate((valid) => {
         if (valid) {
-          this.getData()
+          if (this.searchType === '1') {
+            this.packageName = this.queryForm.name
+            this.getPackageData()
+          } else {
+            this.getUserData()
+          }
         } else {
-          console.log('error submit!!')
           return false
         }
       })
     },
-    initChartData () {
+    initChartOption () {
       this.chartOpention = {
         title: {
           left: '3%',
@@ -196,8 +255,7 @@ export default {
           }
         },
         legend: {
-          data: [],
-          right: '3%'
+          data: []
         },
         tooltip: {
           trigger: 'axis'
@@ -217,7 +275,6 @@ export default {
         grid: {
           left: '3%',
           right: '3%',
-          bottom: '3%',
           containLabel: true
         },
         xAxis: {
@@ -262,10 +319,30 @@ export default {
   }
   #chart-render {
     width: 100%;
-    height: 550px;
+    height: 400px;
     margin: 0 auto;
   }
   .query-form-inline {
     text-align: center;
+  }
+  .el-tag {
+    margin-left: 10px;
+    margin-bottom: 5px;
+  }
+  .el-card__header {
+    padding: 10px 20px;
+  }
+  .total-download-tag span {
+    font-size: 14px;
+  }
+  .link_to_npm {
+    color: inherit;
+    text-decoration: none;
+  }
+  .link_to_npm:hover {
+    text-decoration: underline;
+  }
+  .el-select .el-input {
+    width: 90px;
   }
 </style>
