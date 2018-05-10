@@ -39,7 +39,7 @@
 import * as echarts from 'echarts/lib/echarts'
 import 'echarts/lib/chart/line'
 import 'echarts/lib/component/tooltip'
-import 'echarts/lib/component/title'
+// import 'echarts/lib/component/title'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/dataZoom'
 import fetch from 'isomorphic-fetch'
@@ -66,8 +66,8 @@ export default {
       packageName: 'vue',
       searchType: '1',
       queryForm: {
-        name: '',
-        datetime: ''
+        name: 'vue',
+        datetime: ['2018-04-09', '2018-05-09']
       },
       npmDataChart: '',
       chartOpention: '',
@@ -112,13 +112,14 @@ export default {
   mounted () {
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
     this.initChartOption()
+    this.getPackageData()
     window.onresize = this.npmDataChart.resize
   },
   methods: {
     getPackageData () {
       let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.packageName}`
       this.fullscreenLoading = true
-      fetch(url, {timeout: 5000})
+      fetch(url, {timeout: 10000})
         .then((response) => {
           if (response.status === 404) {
             this.fullscreenLoading = false
@@ -307,7 +308,6 @@ export default {
     }
   }
 }
-
 </script>
 
 <style>
