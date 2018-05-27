@@ -316,6 +316,11 @@ export default {
             lineStyle: {
               color: '#609ee9'
             }
+          },
+          axisLabel: {
+            formatter: function (val) {
+              return val >= 1000 ? (val / 1000) + 'k' : val
+            }
           }
         },
         series: []
