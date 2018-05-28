@@ -118,10 +118,11 @@ export default {
     }
   },
   mounted () {
+    let urlQuery = this.$route.query
     this.queryForm = {
-      searchType: this.$route.query.searchType || 'packageName',
-      name: this.$route.query.name || 'vue',
-      datetime: this.$route.query.datetime.split(',') || [this.dateFormat(new Date().setMonth(new Date().getMonth() - 1)), this.dateFormat()]
+      searchType: urlQuery.searchType || 'packageName',
+      name: urlQuery.name || 'vue',
+      datetime: (urlQuery.datetime && urlQuery.datetime.split(',')) || [this.dateFormat(new Date().setMonth(new Date().getMonth() - 1)), this.dateFormat()]
     }
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
     this.initChartOption()
