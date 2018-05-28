@@ -49,7 +49,7 @@ import 'echarts/lib/component/tooltip'
 // import 'echarts/lib/component/title'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/dataZoom'
-import fetch from 'isomorphic-fetch'
+import * as http from '@/api'
 
 export default {
   data () {
@@ -135,8 +135,7 @@ export default {
   },
   methods: {
     getPackageData () {
-      let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.packageName}`
-      fetch(url, {timeout: 10000})
+      http.getPackageData(this.queryForm.datetime, this.packageName)
         .then((response) => {
           if (response.status === 404) {
             this.fullscreenLoading = false
@@ -188,11 +187,7 @@ export default {
         })
     },
     getUserData () {
-      let offset = 0
-      let size = 20
-      let url = `https://api.npms.io/v2/search?q=maintainer:${this.queryForm.name}&size=${size}&from=${offset}`
-      var packageArr = []
-      fetch(url, { timeout: 10000 })
+      http.getUserData(this.queryForm.name)
         .then((response) => {
           return response.json()
         })
@@ -206,7 +201,7 @@ export default {
             })
             return
           }
-          packageArr = packageArr.concat(res.results.map(x => x.package))
+          let packageArr = [].concat(res.results.map(x => x.package))
           let packageName = []
           packageArr.forEach((item) => {
             packageName.push(item.name)
