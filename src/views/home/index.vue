@@ -13,9 +13,9 @@
         <el-form :inline="true" :model="queryForm" :rules="rules" ref="queryForm" class="query-form-inline">
           <el-form-item prop="name">
             <el-input placeholder="请输入" v-model="queryForm.name" class="input-with-select">
-              <el-select v-model="searchType" slot="prepend" placeholder="请选择">
-                <el-option label="包名" value="1"></el-option>
-                <el-option label="用户名" value="2"></el-option>
+              <el-select v-model="queryForm.searchType" slot="prepend" placeholder="请选择">
+                <el-option label="包名" value="packageName"></el-option>
+                <el-option label="用户名" value="userName"></el-option>
               </el-select>
             </el-input>
           </el-form-item>
@@ -67,22 +67,15 @@ export default {
         callback()
       }
     }
-    let dateFormat = (date = (+new Date())) => {
-      let d = new Date(date)
-      let month = (d.getMonth() + 1)
-      let day = d.getDate()
-      if (month < 10) month = `0${month}`
-      if (day < 10) day = `0${day}`
-      return `${d.getFullYear()}-${month}-${day}`
-    }
+
     return {
-      fullscreenLoading: false,
+      fullscreenLoading: true,
       packageInfo: [],
-      packageName: 'vue',
-      searchType: '1',
+      packageName: '',
       queryForm: {
-        name: 'vue',
-        datetime: [dateFormat(new Date().setMonth(new Date().getMonth() - 1)), dateFormat()]
+        searchType: '',
+        name: '',
+        datetime: []
       },
       npmDataChart: '',
       chartOpention: '',
@@ -125,15 +118,24 @@ export default {
     }
   },
   mounted () {
+    this.queryForm = {
+      searchType: this.$route.query.searchType || 'packageName',
+      name: this.$route.query.name || 'vue',
+      datetime: this.$route.query.datetime.split(',') || [this.dateFormat(new Date().setMonth(new Date().getMonth() - 1)), this.dateFormat()]
+    }
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
     this.initChartOption()
-    this.getPackageData()
+    if (this.queryForm.searchType === 'userName') {
+      this.getUserData()
+    } else {
+      this.packageName = this.queryForm.name
+      this.getPackageData()
+    }
     window.onresize = this.npmDataChart.resize
   },
   methods: {
     getPackageData () {
       let url = `https://api.npmjs.org/downloads/range/${this.queryForm.datetime[0]}:${this.queryForm.datetime[1]}/${this.packageName}`
-      this.fullscreenLoading = true
       fetch(url, {timeout: 10000})
         .then((response) => {
           if (response.status === 404) {
@@ -190,12 +192,13 @@ export default {
       let size = 20
       let url = `https://api.npms.io/v2/search?q=maintainer:${this.queryForm.name}&size=${size}&from=${offset}`
       var packageArr = []
-      fetch(url, {timeout: 10000})
+      fetch(url, { timeout: 10000 })
         .then((response) => {
           return response.json()
         })
         .then((res) => {
           if (res.total === 0) {
+            this.fullscreenLoading = false
             this.$notify({
               title: '提示',
               message: '此用户不存在或此用户下没有包！',
@@ -208,10 +211,11 @@ export default {
           packageArr.forEach((item) => {
             packageName.push(item.name)
           })
-          this.packageName = packageName.toString()
+          this.packageName = packageName.join()
           this.getPackageData()
         })
         .catch((e) => {
+          this.fullscreenLoading = false
           console.log(e)
         })
     },
@@ -249,7 +253,11 @@ export default {
     onSubmit () {
       this.$refs['queryForm'].validate((valid) => {
         if (valid) {
-          if (this.searchType === '1') {
+          this.fullscreenLoading = true
+          let oQuery = { ...this.queryForm }
+          oQuery.datetime = this.queryForm.datetime.join()
+          this.$router.push({ name: 'home', query: { ...oQuery } })
+          if (this.queryForm.searchType === 'packageName') {
             this.packageName = this.queryForm.name
             this.getPackageData()
           } else {
@@ -325,6 +333,14 @@ export default {
         },
         series: []
       }
+    },
+    dateFormat (date = (+new Date())) {
+      let d = new Date(date)
+      let month = (d.getMonth() + 1)
+      let day = d.getDate()
+      if (month < 10) month = `0${month}`
+      if (day < 10) day = `0${day}`
+      return `${d.getFullYear()}-${month}-${day}`
     }
   }
 }
