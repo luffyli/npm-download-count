@@ -50,13 +50,13 @@ import 'echarts/lib/component/tooltip'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/dataZoom'
 import * as http from '@/api'
+import dayjs from 'dayjs'
 
 export default {
   data () {
     let checkDateLength = (rule, value, callback) => {
-      let timeLen = new Date(value[1]).getTime() - new Date(value[0]).getTime()
-      let dataLen = timeLen / 86400000
-      if (dataLen > 546) { // 超过546天
+      let timeDiff = dayjs(value[1]).diff(dayjs(value[0]), 'days')
+      if (timeDiff > 546) { // 超过546天
         this.$notify({
           title: '提示',
           message: '日期范围超出546天跨度，超出部分的数据不显示！',
@@ -83,26 +83,17 @@ export default {
         shortcuts: [{
           text: '最近一周',
           onClick (picker) {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-            picker.$emit('pick', [start, end])
+            picker.$emit('pick', [dayjs().subtract(7, 'day').toDate(), dayjs().toDate()])
           }
         }, {
           text: '最近一个月',
           onClick (picker) {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
-            picker.$emit('pick', [start, end])
+            picker.$emit('pick', [dayjs().subtract(1, 'month').toDate(), dayjs().toDate()])
           }
         }, {
           text: '最近三个月',
           onClick (picker) {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
-            picker.$emit('pick', [start, end])
+            picker.$emit('pick', [dayjs().subtract(3, 'month').toDate(), dayjs().toDate()])
           }
         }]
       },
@@ -122,7 +113,7 @@ export default {
     this.queryForm = {
       searchType: urlQuery.searchType || 'packageName',
       name: urlQuery.name || 'vue',
-      datetime: (urlQuery.datetime && urlQuery.datetime.split(',')) || [this.dateFormat(new Date().setMonth(new Date().getMonth() - 1)), this.dateFormat()]
+      datetime: (urlQuery.datetime && urlQuery.datetime.split(',')) || [dayjs().subtract(1, 'month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     }
     this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
     this.initChartOption()
@@ -329,14 +320,6 @@ export default {
         },
         series: []
       }
-    },
-    dateFormat (date = (+new Date())) {
-      let d = new Date(date)
-      let month = (d.getMonth() + 1)
-      let day = d.getDate()
-      if (month < 10) month = `0${month}`
-      if (day < 10) day = `0${day}`
-      return `${d.getFullYear()}-${month}-${day}`
     }
   }
 }

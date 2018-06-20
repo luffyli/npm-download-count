@@ -1,6 +1,6 @@
 {
   "name": "npm-download-count",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "npm packages download count",
   "author": "LiLong <justlilong@outlook.com>",
   "private": false,
@@ -11,6 +11,7 @@
     "build": "node build/build.js"
   },
   "dependencies": {
+    "dayjs": "^1.6.9",
     "echarts": "^4.0.4",
     "element-ui": "^2.3.6",
     "es6-promise": "^4.2.4",
