@@ -30,12 +30,33 @@
         </el-form>
         <el-card class="box-card" v-show="packageInfo.length > 0">
           <div slot="header" class="clearfix">
-            <div class="total-download-tag">
-              <span>范围内下载总数：</span>
-              <el-tag v-for="(item, index) in packageInfo" :key="index"><a class="link_to_npm" :href="`https://www.npmjs.com/package/${item.name}`" target="_blank">{{ item.name }}</a>：{{ item.total }}</el-tag>
-            </div>
+            <span>日下载统计</span>
           </div>
-          <div id="chart-render"></div>
+          <div class="chart-container" id="day-chart"></div>
+        </el-card>
+        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 7">
+          <div slot="header" class="clearfix">
+            <span>周下载统计</span>
+          </div>
+          <div class="chart-container" id="week-chart"></div>
+        </el-card>
+        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 30">
+          <div slot="header" class="clearfix">
+            <span>月下载统计</span>
+          </div>
+          <div class="chart-container" id="month-chart"></div>
+        </el-card>
+        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 365">
+          <div slot="header" class="clearfix">
+            <span>年下载统计</span>
+          </div>
+          <div class="chart-container" id="year-chart"></div>
+        </el-card>
+        <el-card class="box-card" v-show="packageInfo.length > 0">
+          <div slot="header" class="clearfix">
+            <span>范围内下载总数统计</span>
+          </div>
+          <div class="chart-container" id="total-chart"></div>
         </el-card>
       </el-main>
     </el-container>
@@ -43,14 +64,11 @@
 </template>
 
 <script>
-import * as echarts from 'echarts/lib/echarts'
-import 'echarts/lib/chart/line'
-import 'echarts/lib/component/tooltip'
-// import 'echarts/lib/component/title'
-import 'echarts/lib/component/legend'
-import 'echarts/lib/component/dataZoom'
 import * as http from '@/api'
+import { initChart } from '@/utils/chartConfig'
 import dayjs from 'dayjs'
+import dayjsCusdomPlugin from '@/utils/dayjsPlugin'
+dayjs.extend(dayjsCusdomPlugin)
 
 export default {
   data () {
@@ -77,8 +95,28 @@ export default {
         name: '',
         datetime: []
       },
-      npmDataChart: '',
-      chartOpention: '',
+      chartOption: {
+        legendData: [],
+        day: {
+          xAxisData: [],
+          series: []
+        },
+        week: {
+          xAxisData: [],
+          series: []
+        },
+        month: {
+          xAxisData: [],
+          series: []
+        },
+        year: {
+          xAxisData: [],
+          series: []
+        },
+        total: {
+          seriesData: []
+        }
+      },
       pickerOptions: {
         shortcuts: [{
           text: '最近一周',
@@ -115,126 +153,242 @@ export default {
       name: urlQuery.name || 'vue',
       datetime: (urlQuery.datetime && urlQuery.datetime.split(',')) || [dayjs().subtract(1, 'month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     }
-    this.npmDataChart = echarts.init(document.getElementById('chart-render'), null, {renderer: 'svg'})
-    this.initChartOption()
     if (this.queryForm.searchType === 'userName') {
       this.getUserData()
     } else {
       this.packageName = this.queryForm.name
       this.getPackageData()
     }
-    window.onresize = this.npmDataChart.resize
   },
   methods: {
     getPackageData () {
       http.getPackageData(this.queryForm.datetime, this.packageName)
-        .then((response) => {
-          if (response.status === 404) {
-            this.fullscreenLoading = false
-            this.$notify({
-              title: '错误',
-              message: '数据获取失败！请检查名称是否正确！',
-              type: 'error'
-            })
-            throw new Error('404')
-          } else if (response.status === 400) {
-            this.$notify({
-              title: '错误',
-              message: '批量查询超过了365天！',
-              type: 'error'
-            })
-            throw new Error('400')
-          }
-          return response.json()
-        })
         .then((res) => {
-          this.initChartOption()
-          this.packageInfo = []
-          let packageArr = this.packageName.split(',')
-          if (packageArr.length > 1) {
-            for (let value of Object.entries(res)) {
-              if (value[0]) {
-                this.dataHandle(value[0], value[1].downloads, true)
+          if (res.status === 200) {
+            this.initData()
+            let data = res.data
+            let packageArr = this.packageName.split(',')
+            if (packageArr.length > 1) {
+              for (let value of Object.entries(data)) {
+                if (value[0]) {
+                  this.dataHandle(value[0], value[1].downloads, true)
+                }
               }
+            } else {
+              this.dataHandle(this.packageName, data.downloads, false)
             }
-          } else {
-            this.dataHandle(this.packageName, res.downloads, false)
+            this.fullscreenLoading = false
+            let totalSeries = [{
+              name: '下载数',
+              type: 'bar',
+              barMaxWidth: '15%',
+              barMinWidth: '15px',
+              barMinHeight: 1,
+              data: this.chartOption.total.seriesData,
+              itemStyle: {
+                normal: {
+                  color: (params) => {
+                    let colorList = ['rgb(164,205,238)', 'rgb(42,170,227)', 'rgb(25,46,94)', 'rgb(195,229,235)']
+                    return colorList[params.dataIndex % 4]
+                  }
+                },
+                emphasis: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+              }
+            }]
+            initChart('day-chart', this.chartOption.legendData, this.chartOption.day.xAxisData, this.chartOption.day.series)
+            initChart('total-chart', [], this.chartOption.legendData, totalSeries)
+            this.chartOption.day.xAxisData.length > 7 && initChart('week-chart', this.chartOption.legendData, this.chartOption.week.xAxisData, this.chartOption.week.series, this.queryForm)
+            this.chartOption.day.xAxisData.length > 30 && initChart('month-chart', this.chartOption.legendData, this.chartOption.month.xAxisData, this.chartOption.month.series, this.queryForm)
+            this.chartOption.day.xAxisData.length > 365 && initChart('year-chart', this.chartOption.legendData, this.chartOption.year.xAxisData, this.chartOption.year.series, this.queryForm)
           }
-          this.fullscreenLoading = false
-          this.npmDataChart.setOption(this.chartOpention, true)
-          setTimeout(() => {
-            this.npmDataChart.resize()
-          }, 0)
         })
         .catch((e) => {
-          if (e.message !== '404' && e.message !== '400') {
+          console.log(e.message)
+          let is404 = e.message.indexOf('404') !== -1
+          let is400 = e.message.indexOf('400') !== -1
+          if (!is404 && !is400) {
             this.$notify({
               title: '错误',
               message: '网络错误！',
               type: 'error'
             })
+          } else if (is404) {
+            this.$notify({
+              title: '错误',
+              message: '数据获取失败！请检查名称是否正确！',
+              type: 'error'
+            })
+          } else if (is400) {
+            this.$notify({
+              title: '错误',
+              message: '批量查询不能超过365天！',
+              type: 'error'
+            })
           }
           this.fullscreenLoading = false
-          return Promise.reject(e)
         })
     },
     getUserData () {
       http.getUserData(this.queryForm.name)
-        .then((response) => {
-          return response.json()
-        })
         .then((res) => {
-          if (res.total === 0) {
-            this.fullscreenLoading = false
-            this.$notify({
-              title: '提示',
-              message: '此用户不存在或此用户下没有包！',
-              type: 'warning'
+          if (res.status === 200) {
+            let data = res.data
+            if (data.total === 0) {
+              this.fullscreenLoading = false
+              this.$notify({
+                title: '提示',
+                message: '此用户不存在或此用户下没有npm包！',
+                type: 'warning'
+              })
+              return
+            }
+            let packageArr = [].concat(data.results.map(x => x.package))
+            let packageName = []
+            let scopePackage = []
+            packageArr.forEach((item) => {
+              // 是否含有作用域包
+              if (item.name.indexOf('/') === -1) {
+                packageName.push(item.name)
+              } else {
+                scopePackage.push(item.name)
+              }
             })
-            return
+            if (scopePackage.length) {
+              this.$notify({
+                title: '提示',
+                message: '批量查询不支持作用域包！不支持的包为：' + scopePackage.toString(),
+                type: 'warning'
+              })
+            }
+            this.packageName = packageName.join()
+            this.getPackageData()
           }
-          let packageArr = [].concat(res.results.map(x => x.package))
-          let packageName = []
-          packageArr.forEach((item) => {
-            packageName.push(item.name)
-          })
-          this.packageName = packageName.join()
-          this.getPackageData()
         })
         .catch((e) => {
           this.fullscreenLoading = false
-          console.log(e)
+          this.$notify({
+            title: '错误',
+            message: '网络错误！',
+            type: 'error'
+          })
         })
     },
     dataHandle (seriesName, dataArr, isBatch) {
       let downloadsArr = []
       let dayArr = []
       let totalDownload = 0
-      for (let dwValue of Array.values(dataArr)) {
+      for (let dwValue of dataArr) {
         dayArr.push(dwValue.day)
         downloadsArr.push(dwValue.downloads)
         totalDownload += dwValue.downloads
       }
-      this.chartOpention.series.push({
+      this.chartOption.day.series.push({
         name: seriesName,
         type: 'line',
         data: downloadsArr,
         smooth: true
       })
-      this.chartOpention.xAxis.data = dayArr
+      if (this.chartOption.day.xAxisData.length === 0) {
+        this.chartOption.day.xAxisData = dayArr
+      }
       if (isBatch) {
-        this.chartOpention.legend.data.push(seriesName)
-        totalDownload = totalDownload.toLocaleString()
-        this.packageInfo.push({
+        this.chartOption.legendData.push(seriesName)
+      }
+      this.packageInfo.push({
+        name: seriesName,
+        total: totalDownload
+      })
+      this.chartOption.total.seriesData.push(totalDownload)
+      this.getSumData(seriesName, dayArr, downloadsArr, 'week')
+      this.getSumData(seriesName, dayArr, downloadsArr, 'month')
+      this.getSumData(seriesName, dayArr, downloadsArr, 'year')
+    },
+    getSumData (seriesName, dayArr, downloadsArr, type) {
+      let oldNum = null
+      let downloadSum = 0
+      let dateArr = []
+      let downloadSumArr = []
+      for (let i = 0, dayLen = dayArr.length; i < dayLen; i++) {
+        let num = 0
+        if (type === 'week') {
+          num = dayjs.week(dayArr[i])
+        } else if (type === 'month') {
+          num = dayjs(dayArr[i]).month()
+        } else if (type === 'year') {
+          num = dayjs(dayArr[i]).year()
+        }
+        if (num !== oldNum && oldNum !== null) {
+          dateArr.push(dayArr[i - 1])
+          downloadSumArr.push(downloadSum)
+          downloadSum = 0
+        }
+        downloadSum += downloadsArr[i] || 0
+        oldNum = num
+        if (i === (dayLen - 1)) {
+          dateArr.push(dayArr[i])
+          downloadSumArr.push(downloadSum)
+        }
+      }
+      downloadSum = null
+      if (type === 'week') {
+        this.chartOption.week.series.push({
           name: seriesName,
-          total: totalDownload
+          type: 'line',
+          data: downloadSumArr,
+          smooth: true
         })
-      } else {
-        totalDownload = totalDownload.toLocaleString()
-        this.packageInfo.push({
+        if (this.chartOption.week.xAxisData.length === 0) {
+          this.chartOption.week.xAxisData = dateArr
+        }
+      } else if (type === 'month') {
+        this.chartOption.month.series.push({
           name: seriesName,
-          total: totalDownload
+          type: 'line',
+          data: downloadSumArr,
+          smooth: true
         })
+        if (this.chartOption.month.xAxisData.length === 0) {
+          this.chartOption.month.xAxisData = dateArr
+        }
+      } else if (type === 'year') {
+        this.chartOption.year.series.push({
+          name: seriesName,
+          type: 'line',
+          data: downloadSumArr,
+          smooth: true
+        })
+        if (this.chartOption.year.xAxisData.length === 0) {
+          this.chartOption.year.xAxisData = dateArr
+        }
+      }
+    },
+    initData () {
+      this.packageInfo = []
+      this.chartOption = {
+        legendData: [],
+        day: {
+          xAxisData: [],
+          series: []
+        },
+        week: {
+          xAxisData: [],
+          series: []
+        },
+        month: {
+          xAxisData: [],
+          series: []
+        },
+        year: {
+          xAxisData: [],
+          series: []
+        },
+        total: {
+          seriesData: []
+        }
       }
     },
     onSubmit () {
@@ -254,72 +408,6 @@ export default {
           return false
         }
       })
-    },
-    initChartOption () {
-      this.chartOpention = {
-        title: {
-          left: '3%',
-          text: '',
-          textStyle: {
-            fontSize: 14,
-            fontWeight: 500
-          }
-        },
-        legend: {
-          data: []
-        },
-        tooltip: {
-          trigger: 'axis'
-        },
-        dataZoom: [{
-          type: 'inside'
-        }, {
-          handleSize: '80%',
-          handleStyle: {
-            color: '#fff',
-            shadowBlur: 3,
-            shadowColor: 'rgba(0, 0, 0, 0.6)',
-            shadowOffsetX: 2,
-            shadowOffsetY: 2
-          }
-        }],
-        grid: {
-          left: '3%',
-          right: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          axisTick: {
-            show: false
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#609ee9'
-            }
-          },
-          data: []
-        },
-        yAxis: {
-          type: 'value',
-          splitLine: {
-            lineStyle: {
-              color: ['#D4DFF5']
-            }
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#609ee9'
-            }
-          },
-          axisLabel: {
-            formatter: function (val) {
-              return val >= 1000 ? (val / 1000) + 'k' : val
-            }
-          }
-        },
-        series: []
-      }
     }
   }
 }
@@ -336,7 +424,10 @@ export default {
     float: right;
     line-height: 0;
   }
-  #chart-render {
+  .el-main {
+    padding: 20px 6%;
+  }
+  .chart-container {
     width: 100%;
     height: 400px;
     margin: 0 auto;
@@ -347,6 +438,9 @@ export default {
   .el-tag {
     margin-left: 10px;
     margin-bottom: 5px;
+  }
+  .el-card {
+    margin-bottom: 35px;
   }
   .el-card__header {
     padding: 10px 20px;

@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-const home = () => import(/* webpackChunkName: "HelloWorld" */ '@/views/home')
+const home = () => import(/* webpackChunkName: "home" */ '@/views/home')
 
 Vue.use(Router)
 
