@@ -4,11 +4,12 @@ import 'echarts/lib/chart/bar'
 import 'echarts/lib/component/tooltip'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/dataZoom'
-// import 'echarts/theme/vintage'
 import dayjs from 'dayjs'
 
+var charts = {}
+
 export const initChart = (id, legendData, xAxisData, series, queryForm) => {
-  let charts = echarts.init(document.getElementById(id), null, {renderer: 'svg'})
+  charts[id] = echarts.init(document.getElementById(id), null, {renderer: 'svg'})
   let chartOpention = {
     title: {
       left: '3%',
@@ -25,7 +26,7 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
       trigger: 'axis',
       formatter: (params) => {
         let sTip = ''
-        if (id === 'total-chart') {
+        if (id === 'total_chart') {
           sTip = `<b>${params[0].name}</b><br/>`
           for (let i = 0, len = params.length; i < len; i++) {
             if (i < len - 1) {
@@ -36,24 +37,24 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
           }
         } else {
           switch (id) {
-            case 'day-chart':
+            case 'day_chart':
               sTip = params[0].axisValue + '<br/>'
               break
-            case 'week-chart':
+            case 'week_chart':
               if (params[0].dataIndex === 0) {
                 sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
                 sTip = dayjs(params[0].axisValue).startOf('week').format('YYYY-MM-DD') + ' 至 ' + params[0].axisValue + '<br/>'
               }
               break
-            case 'month-chart':
+            case 'month_chart':
               if (params[0].dataIndex === 0) {
                 sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
                 sTip = dayjs(params[0].axisValue).startOf('month').format('YYYY-MM-DD') + ' 至 ' + params[0].axisValue + '<br/>'
               }
               break
-            case 'year-chart':
+            case 'year_chart':
               if (params[0].dataIndex === 0) {
                 sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
@@ -116,14 +117,20 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
       },
       axisLabel: {
         formatter: function (val) {
-          return val >= 1000 ? (val / 1000) + 'k' : val
+          if (val >= 1000000) {
+            val = (val / 1000000) + 'M'
+          } else if (val >= 1000) {
+            val = (val / 1000) + 'K'
+          }
+          return val
         }
       }
     },
     series: series
   }
-  charts.setOption(chartOpention, true)
+  charts[id].setOption(chartOpention, true)
   setTimeout(() => {
-    charts.resize()
+    charts[id].resize()
   }, 0)
+  return charts[id]
 }

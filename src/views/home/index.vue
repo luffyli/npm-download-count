@@ -28,35 +28,35 @@
             <el-button type="primary" @click="onSubmit" v-loading.fullscreen.lock="fullscreenLoading">查询</el-button>
           </el-form-item>
         </el-form>
-        <el-card class="box-card" v-show="packageInfo.length > 0">
+        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 0">
           <div slot="header" class="clearfix">
             <span>日下载统计</span>
           </div>
-          <div class="chart-container" id="day-chart"></div>
+          <div class="chart-container" id="day_chart"></div>
         </el-card>
         <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 7">
           <div slot="header" class="clearfix">
             <span>周下载统计</span>
           </div>
-          <div class="chart-container" id="week-chart"></div>
+          <div class="chart-container" id="week_chart"></div>
         </el-card>
         <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 30">
           <div slot="header" class="clearfix">
             <span>月下载统计</span>
           </div>
-          <div class="chart-container" id="month-chart"></div>
+          <div class="chart-container" id="month_chart"></div>
         </el-card>
         <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 365">
           <div slot="header" class="clearfix">
             <span>年下载统计</span>
           </div>
-          <div class="chart-container" id="year-chart"></div>
+          <div class="chart-container" id="year_chart"></div>
         </el-card>
-        <el-card class="box-card" v-show="packageInfo.length > 0">
+        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 0">
           <div slot="header" class="clearfix">
             <span>范围内下载总数统计</span>
           </div>
-          <div class="chart-container" id="total-chart"></div>
+          <div class="chart-container" id="total_chart"></div>
         </el-card>
       </el-main>
     </el-container>
@@ -88,7 +88,6 @@ export default {
 
     return {
       fullscreenLoading: true,
-      packageInfo: [],
       packageName: '',
       queryForm: {
         searchType: '',
@@ -114,6 +113,7 @@ export default {
           series: []
         },
         total: {
+          xAxisData: [],
           seriesData: []
         }
       },
@@ -165,7 +165,7 @@ export default {
       http.getPackageData(this.queryForm.datetime, this.packageName)
         .then((res) => {
           if (res.status === 200) {
-            this.initData()
+            this.resetData()
             let data = res.data
             let packageArr = this.packageName.split(',')
             if (packageArr.length > 1) {
@@ -178,36 +178,10 @@ export default {
               this.dataHandle(this.packageName, data.downloads, false)
             }
             this.fullscreenLoading = false
-            let totalSeries = [{
-              name: '下载数',
-              type: 'bar',
-              barMaxWidth: '15%',
-              barMinWidth: '15px',
-              barMinHeight: 1,
-              data: this.chartOption.total.seriesData,
-              itemStyle: {
-                normal: {
-                  color: (params) => {
-                    let colorList = ['rgb(164,205,238)', 'rgb(42,170,227)', 'rgb(25,46,94)', 'rgb(195,229,235)']
-                    return colorList[params.dataIndex % 4]
-                  }
-                },
-                emphasis: {
-                  shadowBlur: 10,
-                  shadowOffsetX: 0,
-                  shadowColor: 'rgba(0, 0, 0, 0.5)'
-                }
-              }
-            }]
-            initChart('day-chart', this.chartOption.legendData, this.chartOption.day.xAxisData, this.chartOption.day.series)
-            initChart('total-chart', [], this.chartOption.legendData, totalSeries)
-            this.chartOption.day.xAxisData.length > 7 && initChart('week-chart', this.chartOption.legendData, this.chartOption.week.xAxisData, this.chartOption.week.series, this.queryForm)
-            this.chartOption.day.xAxisData.length > 30 && initChart('month-chart', this.chartOption.legendData, this.chartOption.month.xAxisData, this.chartOption.month.series, this.queryForm)
-            this.chartOption.day.xAxisData.length > 365 && initChart('year-chart', this.chartOption.legendData, this.chartOption.year.xAxisData, this.chartOption.year.series, this.queryForm)
+            this.showChart()
           }
         })
         .catch((e) => {
-          console.log(e.message)
           let is404 = e.message.indexOf('404') !== -1
           let is400 = e.message.indexOf('400') !== -1
           if (!is404 && !is400) {
@@ -277,6 +251,54 @@ export default {
           })
         })
     },
+    showChart () {
+      let totalChartSeries = [{
+        name: '下载数',
+        type: 'bar',
+        barMaxWidth: '15%',
+        barMinWidth: '15px',
+        barMinHeight: 1,
+        data: this.chartOption.total.seriesData,
+        label: {
+          normal: {
+            show: true,
+            position: 'top',
+            fontSize: '14'
+          }
+        },
+        itemStyle: {
+          normal: {
+            color: (params) => {
+              let colorList = ['rgb(164,205,238)', 'rgb(42,170,227)', 'rgb(25,46,94)', 'rgb(195,229,235)']
+              return colorList[params.dataIndex % 4]
+            }
+          },
+          emphasis: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }]
+      var datChart = initChart('day_chart', this.chartOption.legendData, this.chartOption.day.xAxisData, this.chartOption.day.series)
+      var totalChart = initChart('total_chart', [], (this.chartOption.legendData.length > 0 ? this.chartOption.legendData : this.chartOption.total.xAxisData), totalChartSeries)
+      if (this.chartOption.day.xAxisData.length > 7) {
+        var weekChart = initChart('week_chart', this.chartOption.legendData, this.chartOption.week.xAxisData, this.chartOption.week.series, this.queryForm)
+      }
+      if (this.chartOption.day.xAxisData.length > 30) {
+        var monthChart = initChart('month_chart', this.chartOption.legendData, this.chartOption.month.xAxisData, this.chartOption.month.series, this.queryForm)
+      }
+      if (this.chartOption.day.xAxisData.length > 365) {
+        var yearChart = initChart('year_chart', this.chartOption.legendData, this.chartOption.year.xAxisData, this.chartOption.year.series, this.queryForm)
+      }
+      window.onresize = () => {
+        datChart.resize()
+        totalChart.resize()
+        weekChart && weekChart.resize()
+        monthChart && monthChart.resize()
+        yearChart && yearChart.resize()
+      }
+    },
     dataHandle (seriesName, dataArr, isBatch) {
       let downloadsArr = []
       let dayArr = []
@@ -297,11 +319,9 @@ export default {
       }
       if (isBatch) {
         this.chartOption.legendData.push(seriesName)
+      } else {
+        this.chartOption.total.xAxisData.push(seriesName)
       }
-      this.packageInfo.push({
-        name: seriesName,
-        total: totalDownload
-      })
       this.chartOption.total.seriesData.push(totalDownload)
       this.getSumData(seriesName, dayArr, downloadsArr, 'week')
       this.getSumData(seriesName, dayArr, downloadsArr, 'month')
@@ -366,8 +386,7 @@ export default {
         }
       }
     },
-    initData () {
-      this.packageInfo = []
+    resetData () {
       this.chartOption = {
         legendData: [],
         day: {
@@ -387,6 +406,7 @@ export default {
           series: []
         },
         total: {
+          xAxisData: [],
           seriesData: []
         }
       }
