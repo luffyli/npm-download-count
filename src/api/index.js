@@ -13,7 +13,7 @@ export const getPackageData = (datetime, packageName) => {
 // 获取用户名下发布的包信息
 export const getUserData = (username) => {
   let offset = 0
-  let size = 10 // 默认获取的包数
+  let size = 18 // 默认获取的包数
   let url = `https://api.npms.io/v2/search?q=maintainer:${username}&size=${size}&from=${offset}`
   return service.get(url)
 }

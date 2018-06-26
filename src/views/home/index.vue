@@ -178,13 +178,29 @@ export default {
               this.dataHandle(this.packageName, data.downloads, false)
             }
             this.fullscreenLoading = false
-            this.showChart()
+            try {
+              this.showChart()
+            } catch (error) {
+              this.$notify({
+                title: '错误',
+                message: error.message,
+                type: 'error'
+              })
+            }
           }
         })
         .catch((e) => {
+          console.log(e)
           let is404 = e.message.indexOf('404') !== -1
           let is400 = e.message.indexOf('400') !== -1
-          if (!is404 && !is400) {
+          let timeout = e.message.indexOf('timeout') !== -1
+          if (timeout) {
+            this.$notify({
+              title: '错误',
+              message: '请求超时！',
+              type: 'error'
+            })
+          } else if (!is404 && !is400) {
             this.$notify({
               title: '错误',
               message: '网络错误！',
@@ -256,8 +272,9 @@ export default {
         name: '下载数',
         type: 'bar',
         barMaxWidth: '15%',
-        barMinWidth: '15px',
+        barMinWidth: '4%',
         barMinHeight: 1,
+        barCategoryGap: '5%',
         data: this.chartOption.total.seriesData,
         label: {
           normal: {

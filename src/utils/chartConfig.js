@@ -11,19 +11,16 @@ var charts = {}
 export const initChart = (id, legendData, xAxisData, series, queryForm) => {
   charts[id] = echarts.init(document.getElementById(id), null, {renderer: 'svg'})
   let chartOpention = {
-    title: {
-      left: '3%',
-      text: '',
-      textStyle: {
-        fontSize: 14,
-        fontWeight: 500
-      }
-    },
     legend: {
+      orient: 'vertical',
+      left: '81%',
+      right: '1%',
+      align: 'left',
       data: legendData
     },
     tooltip: {
       trigger: 'axis',
+      confine: true,
       formatter: (params) => {
         let sTip = ''
         if (id === 'total_chart') {
@@ -87,8 +84,10 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
       }
     }],
     grid: {
-      left: '3%',
-      right: '3%',
+      left: '2%',
+      right: '20%',
+      top: '1%',
+      bottom: '50px',
       containLabel: true
     },
     xAxis: {
@@ -127,6 +126,14 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
       }
     },
     series: series
+  }
+
+  if (id === 'total_chart' || id === 'year_chart') {
+    chartOpention.dataZoom[1].show = false
+    chartOpention.grid.bottom = '2%'
+  }
+  if (id === 'total_chart' || series.length === 1) {
+    chartOpention.grid.right = '4%'
   }
   charts[id].setOption(chartOpention, true)
   setTimeout(() => {

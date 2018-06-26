@@ -1,6 +1,6 @@
 {
   "name": "npm-download-count",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "npm packages download count",
   "author": "LiLong <justlilong@outlook.com>",
   "private": false,
@@ -66,8 +66,8 @@
     "webpack-merge": "^4.1.0"
   },
   "engines": {
-    "node": ">= 6.0.0",
-    "npm": ">= 3.0.0"
+    "node": ">= 7.6.0",
+    "npm": ">= 5.0.0"
   },
   "browserslist": [
     "> 1%",
