@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-const service = axios.create()
-
-service.defaults.timeout = 8000
+const service = axios.create({
+  timeout: 10000
+})
 
 // 获取包下载量
 export const getPackageData = (datetime, packageName) => {
