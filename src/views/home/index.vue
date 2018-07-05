@@ -462,7 +462,10 @@ export default {
     line-height: 0;
   }
   .el-main {
+    width: 100%;
+    max-width: 1920px;
     padding: 20px 6%;
+    margin: 0 auto;
   }
   .chart-container {
     width: 100%;
