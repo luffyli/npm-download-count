@@ -80,7 +80,7 @@ export default {
           message: '日期范围超出546天跨度，超出部分的数据不显示！',
           type: 'warning'
         })
-        callback()
+      callback()
       } else {
         callback()
       }
