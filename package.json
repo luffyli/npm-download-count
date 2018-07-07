@@ -1,7 +1,9 @@
 {
   "name": "npm-download-count",
-  "version": "0.1.0",
-  "private": true,
+  "version": "2.0.0",
+  "description": "npm packages download count",
+  "author": "LiLong <justlilong@outlook.com>",
+  "private": false,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
@@ -20,14 +22,32 @@
     "@vue/cli-plugin-eslint": "^3.0.0-beta.15",
     "@vue/cli-service": "^3.0.0-beta.15",
     "@vue/eslint-config-standard": "^3.0.0-rc.3",
+    "husky": "^1.0.0-rc.12",
     "vue-template-compiler": "^2.5.16"
   },
-  "gitHooks": {
-    "pre-commit": "lint-staged"
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint",
+      "pre-push": "npm run lint"
+    }
   },
   "browserslist": [
     "> 1%",
     "last 2 versions",
     "not ie <= 8"
-  ]
+  ],
+  "keywords": [
+    "npm",
+    "npm下载统计",
+    "download count",
+    "可视化"
+  ],
+  "homepage": "https://github.com/luffyli/npm-packages-download-count",
+  "bugs": {
+    "url": "https://github.com/luffyli/npm-packages-download-count/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luffyli/npm-packages-download-count.git"
+  }
 }
