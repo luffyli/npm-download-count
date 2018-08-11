@@ -65,7 +65,7 @@
 
 <script>
 import * as http from '@/api'
-import { initChart } from '@/utils/chartConfig'
+import { initChart, totalChartSeries } from '@/utils/chartConfig'
 import dayjs from 'dayjs'
 import dayjsCusdomPlugin from '@/utils/dayjsPlugin'
 dayjs.extend(dayjsCusdomPlugin)
@@ -268,48 +268,49 @@ export default {
         })
     },
     showChart () {
-      let totalChartSeries = [{
-        name: '下载数',
-        type: 'bar',
-        barMaxWidth: '15%',
-        barMinWidth: '4%',
-        barMinHeight: 1,
-        barCategoryGap: '5%',
-        data: this.chartOption.total.seriesData,
-        label: {
-          normal: {
-            show: true,
-            position: 'top',
-            fontSize: '14'
-          }
-        },
-        itemStyle: {
-          normal: {
-            color: (params) => {
-              let colorList = ['rgb(164,205,238)', 'rgb(42,170,227)', 'rgb(25,46,94)', 'rgb(195,229,235)']
-              return colorList[params.dataIndex % 4]
-            }
-          },
-          emphasis: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        }
-      }]
-      var datChart = initChart('day_chart', this.chartOption.legendData, this.chartOption.day.xAxisData, this.chartOption.day.series)
-      var totalChart = initChart('total_chart', [], (this.chartOption.legendData.length > 0 ? this.chartOption.legendData : this.chartOption.total.xAxisData), totalChartSeries)
+      var dayChart = initChart({
+        id: 'day_chart',
+        legendData: this.chartOption.legendData,
+        xAxisData: this.chartOption.day.xAxisData,
+        series: this.chartOption.day.series,
+        queryForm: null
+      })
+      var totalChart = initChart({
+        id: 'total_chart',
+        legendData: [],
+        xAxisData: (this.chartOption.legendData.length > 0 ? this.chartOption.legendData : this.chartOption.total.xAxisData),
+        series: totalChartSeries(this.chartOption.total.seriesData),
+        queryForm: null
+      })
       if (this.chartOption.day.xAxisData.length > 7) {
-        var weekChart = initChart('week_chart', this.chartOption.legendData, this.chartOption.week.xAxisData, this.chartOption.week.series, this.queryForm)
+        var weekChart = initChart({
+          id: 'week_chart',
+          legendData: this.chartOption.legendData,
+          xAxisData: this.chartOption.week.xAxisData,
+          series: this.chartOption.week.series,
+          queryForm: this.queryForm
+        })
       }
       if (this.chartOption.day.xAxisData.length > 30) {
-        var monthChart = initChart('month_chart', this.chartOption.legendData, this.chartOption.month.xAxisData, this.chartOption.month.series, this.queryForm)
+        var monthChart = initChart({
+          id: 'month_chart',
+          legendData: this.chartOption.legendData,
+          xAxisData: this.chartOption.month.xAxisData,
+          series: this.chartOption.month.series,
+          queryForm: this.queryForm
+        })
       }
       if (this.chartOption.day.xAxisData.length > 365) {
-        var yearChart = initChart('year_chart', this.chartOption.legendData, this.chartOption.year.xAxisData, this.chartOption.year.series, this.queryForm)
+        var yearChart = initChart({
+          id: 'year_chart',
+          legendData: this.chartOption.legendData,
+          xAxisData: this.chartOption.year.xAxisData,
+          series: this.chartOption.year.series,
+          queryForm: this.queryForm
+        })
       }
       window.onresize = () => {
-        datChart.resize()
+        dayChart.resize()
         totalChart.resize()
         weekChart && weekChart.resize()
         monthChart && monthChart.resize()

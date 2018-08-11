@@ -8,22 +8,22 @@ import dayjs from 'dayjs'
 
 var charts = {}
 
-export const initChart = (id, legendData, xAxisData, series, queryForm) => {
-  charts[id] = echarts.init(document.getElementById(id), null, {renderer: 'svg'})
+export const initChart = (option) => {
+  charts[option.id] = echarts.init(document.getElementById(option.id), null, {renderer: 'svg'})
   let chartOpention = {
     legend: {
       orient: 'vertical',
       left: '81%',
       right: '1%',
       align: 'left',
-      data: legendData
+      data: option.legendData
     },
     tooltip: {
       trigger: 'axis',
       confine: true,
       formatter: (params) => {
         let sTip = ''
-        if (id === 'total_chart') {
+        if (option.id === 'total_chart') {
           sTip = `<b>${params[0].name}</b><br/>`
           for (let i = 0, len = params.length; i < len; i++) {
             if (i < len - 1) {
@@ -33,27 +33,27 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
             }
           }
         } else {
-          switch (id) {
+          switch (option.id) {
             case 'day_chart':
               sTip = params[0].axisValue + '<br/>'
               break
             case 'week_chart':
               if (params[0].dataIndex === 0) {
-                sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
+                sTip = option.queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
                 sTip = dayjs(params[0].axisValue).startOf('week').format('YYYY-MM-DD') + ' 至 ' + params[0].axisValue + '<br/>'
               }
               break
             case 'month_chart':
               if (params[0].dataIndex === 0) {
-                sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
+                sTip = option.queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
                 sTip = dayjs(params[0].axisValue).startOf('month').format('YYYY-MM-DD') + ' 至 ' + params[0].axisValue + '<br/>'
               }
               break
             case 'year_chart':
               if (params[0].dataIndex === 0) {
-                sTip = queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
+                sTip = option.queryForm.datetime[0] + ' 至 ' + params[0].axisValue + '<br/>'
               } else {
                 sTip = dayjs(params[0].axisValue).startOf('year').format('YYYY-MM-DD') + ' 至 ' + params[0].axisValue + '<br/>'
               }
@@ -86,7 +86,7 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
     grid: {
       left: '2%',
       right: '20%',
-      top: '1%',
+      top: '3%',
       bottom: '50px',
       containLabel: true
     },
@@ -100,7 +100,7 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
           color: '#609ee9'
         }
       },
-      data: xAxisData
+      data: option.xAxisData
     },
     yAxis: {
       type: 'value',
@@ -125,19 +125,52 @@ export const initChart = (id, legendData, xAxisData, series, queryForm) => {
         }
       }
     },
-    series: series
+    series: option.series
   }
 
-  if (id === 'total_chart' || id === 'year_chart') {
+  if (option.id === 'total_chart' || option.id === 'year_chart') {
     chartOpention.dataZoom[1].show = false
     chartOpention.grid.bottom = '2%'
   }
-  if (id === 'total_chart' || series.length === 1) {
+  if (option.id === 'total_chart' || option.series.length === 1) {
     chartOpention.grid.right = '4%'
   }
-  charts[id].setOption(chartOpention, true)
+  charts[option.id].setOption(chartOpention, true)
   setTimeout(() => {
-    charts[id].resize()
+    charts[option.id].resize()
   }, 0)
-  return charts[id]
+  return charts[option.id]
+}
+
+export const totalChartSeries = (seriesData) => {
+  let series = [{
+    name: '下载数',
+    type: 'bar',
+    barMaxWidth: '15%',
+    barMinWidth: '4%',
+    barMinHeight: 1,
+    barCategoryGap: '5%',
+    data: seriesData,
+    label: {
+      normal: {
+        show: true,
+        position: 'top',
+        fontSize: '14'
+      }
+    },
+    itemStyle: {
+      normal: {
+        color: (params) => {
+          let colorList = ['rgb(164,205,238)', 'rgb(42,170,227)', 'rgb(25,46,94)', 'rgb(195,229,235)']
+          return colorList[params.dataIndex % 4]
+        }
+      },
+      emphasis: {
+        shadowBlur: 10,
+        shadowOffsetX: 0,
+        shadowColor: 'rgba(0, 0, 0, 0.5)'
+      }
+    }
+  }]
+  return series
 }
