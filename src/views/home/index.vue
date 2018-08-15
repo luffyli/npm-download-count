@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="wrapper">
     <el-container>
       <el-header>
         <span>npm包下载数统计</span>
@@ -67,8 +67,8 @@
 import * as http from '@/api'
 import { initChart, totalChartSeries } from '@/utils/chartConfig'
 import dayjs from 'dayjs'
-import dayjsCusdomPlugin from '@/utils/dayjsPlugin'
-dayjs.extend(dayjsCusdomPlugin)
+import weekOfYear from 'dayjs/plugin/weekOfYear'
+dayjs.extend(weekOfYear)
 
 export default {
   data () {
@@ -164,58 +164,47 @@ export default {
     getPackageData () {
       http.getPackageData(this.queryForm.datetime, this.packageName)
         .then((res) => {
-          if (res.status === 200) {
-            this.resetData()
-            let data = res.data
-            let packageArr = this.packageName.split(',')
-            if (packageArr.length > 1) {
-              for (let value of Object.entries(data)) {
-                if (value[0]) {
-                  this.dataHandle(value[0], value[1].downloads, true)
-                }
+          this.resetData()
+          let data = res.data
+          let packageArr = this.packageName.split(',')
+          if (packageArr.length > 1) {
+            for (let value of Object.entries(data)) {
+              if (value[0]) {
+                this.dataHandle(value[0], value[1].downloads, true)
               }
-            } else {
-              this.dataHandle(this.packageName, data.downloads, false)
             }
-            this.fullscreenLoading = false
-            try {
-              this.showChart()
-            } catch (error) {
+          } else {
+            this.dataHandle(this.packageName, data.downloads, false)
+          }
+          this.fullscreenLoading = false
+          this.showChart()
+        })
+        .catch((error) => {
+          if (error.response) {
+            let status = error.response.status
+            if (status === 404) {
               this.$notify({
                 title: '错误',
-                message: error.message,
+                message: '数据获取失败！请检查名称是否正确！',
+                type: 'error'
+              })
+            } else if (status === 400) {
+              this.$notify({
+                title: '错误',
+                message: '批量查询不能超过365天！',
+                type: 'error'
+              })
+            } else {
+              this.$notify({
+                title: '错误',
+                message: error.response.data.error || 'error',
                 type: 'error'
               })
             }
-          }
-        })
-        .catch((e) => {
-          console.log(e)
-          let is404 = e.message.indexOf('404') !== -1
-          let is400 = e.message.indexOf('400') !== -1
-          let timeout = e.message.indexOf('timeout') !== -1
-          if (timeout) {
-            this.$notify({
-              title: '错误',
-              message: '请求超时！',
-              type: 'error'
-            })
-          } else if (!is404 && !is400) {
+          } else {
             this.$notify({
               title: '错误',
               message: '网络错误！',
-              type: 'error'
-            })
-          } else if (is404) {
-            this.$notify({
-              title: '错误',
-              message: '数据获取失败！请检查名称是否正确！',
-              type: 'error'
-            })
-          } else if (is400) {
-            this.$notify({
-              title: '错误',
-              message: '批量查询不能超过365天！',
               type: 'error'
             })
           }
@@ -353,7 +342,7 @@ export default {
       for (let i = 0, dayLen = dayArr.length; i < dayLen; i++) {
         let num = 0
         if (type === 'week') {
-          num = dayjs.week(dayArr[i])
+          num = dayjs(dayArr[i]).week()
         } else if (type === 'month') {
           num = dayjs(dayArr[i]).month()
         } else if (type === 'year') {
