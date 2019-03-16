@@ -283,8 +283,10 @@ export default {
           } else {
             this.dataHandle(this.packageName, data.downloads, false)
           }
-          this.fullscreenLoading = false
-          this.showChart()
+          setTimeout(() => {
+            this.showChart()
+            this.fullscreenLoading = false
+          }, 0)
         })
         .catch((error) => {
           if (error.response) {
@@ -364,22 +366,23 @@ export default {
         })
     },
     showChart () {
-      var dayChart = initChart({
+      let dayChart = initChart({
         id: 'day_chart',
         legendData: this.chartOption.legendData,
         xAxisData: this.chartOption.day.xAxisData,
         series: this.chartOption.day.series,
         queryForm: null
       })
-      var totalChart = initChart({
+      let totalChart = initChart({
         id: 'total_chart',
         legendData: [],
-        xAxisData: (this.chartOption.legendData.length > 0 ? this.chartOption.legendData : this.chartOption.total.xAxisData),
+        xAxisData: this.chartOption.legendData.length > 0 ? this.chartOption.legendData : this.chartOption.total.xAxisData,
         series: totalChartSeries(this.chartOption.total.seriesData),
         queryForm: null
       })
+      let weekChart = {}
       if (this.chartOption.day.xAxisData.length > 7) {
-        var weekChart = initChart({
+        weekChart = initChart({
           id: 'week_chart',
           legendData: this.chartOption.legendData,
           xAxisData: this.chartOption.week.xAxisData,
@@ -387,8 +390,9 @@ export default {
           queryForm: this.queryForm
         })
       }
+      let monthChart = {}
       if (this.chartOption.day.xAxisData.length > 30) {
-        var monthChart = initChart({
+        monthChart = initChart({
           id: 'month_chart',
           legendData: this.chartOption.legendData,
           xAxisData: this.chartOption.month.xAxisData,
@@ -396,8 +400,9 @@ export default {
           queryForm: this.queryForm
         })
       }
+      let yearChart = {}
       if (this.chartOption.day.xAxisData.length > 365) {
-        var yearChart = initChart({
+        yearChart = initChart({
           id: 'year_chart',
           legendData: this.chartOption.legendData,
           xAxisData: this.chartOption.year.xAxisData,
