@@ -3,60 +3,164 @@
     <el-container>
       <el-header>
         <span>npm包下载数统计</span>
-        <a href="https://github.com/luffyli/npm-download-count" target="_blank" class="header-github-link">
-          <svg height="60" width="28" viewBox="0 0 16 16" version="1.1" aria-hidden="true" class="octicon octicon-mark-github">
-            <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+        <a
+          href="https://github.com/luffyli/npm-download-count"
+          target="_blank"
+          class="header-github-link"
+        >
+          <svg
+            height="60"
+            width="28"
+            viewBox="0 0 16 16"
+            version="1.1"
+            aria-hidden="true"
+            class="octicon octicon-mark-github"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+            >
+            </path>
           </svg>
         </a>
       </el-header>
       <el-main>
-        <el-form :inline="true" :model="queryForm" :rules="rules" ref="queryForm" class="query-form-inline">
+        <el-form
+          :inline="true"
+          :model="queryForm"
+          :rules="rules"
+          ref="queryForm"
+          class="query-form-inline"
+        >
           <el-form-item prop="name">
-            <el-input placeholder="请输入" v-model="queryForm.name" class="input-with-select">
-              <el-select v-model="queryForm.searchType" slot="prepend" placeholder="请选择">
-                <el-option label="包名" value="packageName"></el-option>
-                <el-option label="用户名" value="userName"></el-option>
+            <el-input
+              placeholder="请输入"
+              v-model="queryForm.name"
+              class="input-with-select"
+            >
+              <el-select
+                v-model="queryForm.searchType"
+                slot="prepend"
+                placeholder="请选择"
+              >
+                <el-option
+                  label="包名"
+                  value="packageName"
+                >
+                </el-option>
+                <el-option
+                  label="用户名"
+                  value="userName"
+                >
+                </el-option>
               </el-select>
             </el-input>
           </el-form-item>
-          <el-form-item label="日期范围" prop="datetime">
-            <el-date-picker v-model="queryForm.datetime" type="daterange" align="right" value-format="yyyy-MM-dd" unlink-panels range-separator="至" start-placeholder="开始日期"
-                end-placeholder="结束日期" :picker-options="pickerOptions">
+          <el-form-item
+            label="日期范围"
+            prop="datetime"
+          >
+            <el-date-picker
+              v-model="queryForm.datetime"
+              type="daterange"
+              align="right"
+              value-format="yyyy-MM-dd"
+              unlink-panels
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              :picker-options="pickerOptions"
+            >
             </el-date-picker>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="onSubmit" v-loading.fullscreen.lock="fullscreenLoading">查询</el-button>
+            <el-button
+              type="primary"
+              @click="onSubmit"
+              v-loading.fullscreen.lock="fullscreenLoading"
+            >
+              查询
+            </el-button>
           </el-form-item>
         </el-form>
-        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 0">
-          <div slot="header" class="clearfix">
+        <el-card
+          class="box-card"
+          v-show="this.chartOption.day.xAxisData.length > 0"
+        >
+          <div
+            slot="header"
+            class="clearfix"
+          >
             <span>日下载统计</span>
           </div>
-          <div class="chart-container" id="day_chart"></div>
+          <div
+            class="chart-container"
+            id="day_chart"
+          ></div>
         </el-card>
-        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 7">
-          <div slot="header" class="clearfix">
+        <el-card
+          class="box-card"
+          v-show="this.chartOption.day.xAxisData.length > 7"
+        >
+          <div
+            slot="header"
+            class="clearfix"
+          >
             <span>周下载统计</span>
           </div>
-          <div class="chart-container" id="week_chart"></div>
+          <div
+            class="chart-container"
+            id="week_chart"
+          >
+          </div>
         </el-card>
-        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 30">
-          <div slot="header" class="clearfix">
+        <el-card
+          class="box-card"
+          v-show="this.chartOption.day.xAxisData.length > 30"
+        >
+          <div
+            slot="header"
+            class="clearfix"
+          >
             <span>月下载统计</span>
           </div>
-          <div class="chart-container" id="month_chart"></div>
+          <div
+            class="chart-container"
+            id="month_chart"
+          >
+          </div>
         </el-card>
-        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 365">
-          <div slot="header" class="clearfix">
+        <el-card
+          class="box-card"
+          v-show="this.chartOption.day.xAxisData.length > 365"
+        >
+          <div
+            slot="header"
+            class="clearfix"
+          >
             <span>年下载统计</span>
           </div>
-          <div class="chart-container" id="year_chart"></div>
+          <div
+            class="chart-container"
+            id="year_chart"
+          >
+          </div>
         </el-card>
-        <el-card class="box-card" v-show="this.chartOption.day.xAxisData.length > 0">
-          <div slot="header" class="clearfix">
+        <el-card
+          class="box-card"
+          v-show="this.chartOption.day.xAxisData.length > 0"
+        >
+          <div
+            slot="header"
+            class="clearfix"
+          >
             <span>范围内下载总数统计</span>
           </div>
-          <div class="chart-container" id="total_chart"></div>
+          <div
+            class="chart-container"
+            id="total_chart"
+          >
+          </div>
         </el-card>
       </el-main>
     </el-container>
@@ -71,6 +175,7 @@ import weekOfYear from 'dayjs/plugin/weekOfYear'
 dayjs.extend(weekOfYear)
 
 export default {
+  name: 'Home',
   data () {
     let checkDateLength = (rule, value, callback) => {
       let timeDiff = dayjs(value[1]).diff(dayjs(value[0]), 'days')
@@ -94,6 +199,7 @@ export default {
         name: '',
         datetime: []
       },
+      initialChartOption: {},
       chartOption: {
         legendData: [],
         day: {
@@ -153,6 +259,7 @@ export default {
       name: urlQuery.name || 'vue',
       datetime: (urlQuery.datetime && urlQuery.datetime.split(',')) || [dayjs().subtract(1, 'month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')]
     }
+    this.initialChartOption = JSON.parse(JSON.stringify(this.chartOption))
     if (this.queryForm.searchType === 'userName') {
       this.getUserData()
     } else {
@@ -164,7 +271,7 @@ export default {
     getPackageData () {
       http.getPackageData(this.queryForm.datetime, this.packageName)
         .then((res) => {
-          this.resetData()
+          this.chartOption = JSON.parse(JSON.stringify(this.initialChartOption))
           let data = res.data
           let packageArr = this.packageName.split(',')
           if (packageArr.length > 1) {
@@ -390,31 +497,6 @@ export default {
         })
         if (this.chartOption.year.xAxisData.length === 0) {
           this.chartOption.year.xAxisData = dateArr
-        }
-      }
-    },
-    resetData () {
-      this.chartOption = {
-        legendData: [],
-        day: {
-          xAxisData: [],
-          series: []
-        },
-        week: {
-          xAxisData: [],
-          series: []
-        },
-        month: {
-          xAxisData: [],
-          series: []
-        },
-        year: {
-          xAxisData: [],
-          series: []
-        },
-        total: {
-          xAxisData: [],
-          seriesData: []
         }
       }
     },
