@@ -22,6 +22,7 @@
     "@vue/cli-plugin-eslint": "^3.0.0-beta.15",
     "@vue/cli-service": "^3.0.0-beta.15",
     "@vue/eslint-config-standard": "^3.0.0-rc.3",
+    "babel-plugin-component": "^1.1.1",
     "husky": "^1.0.0-rc.12",
     "vue-template-compiler": "^2.5.16"
   },
